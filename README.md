@@ -10,7 +10,9 @@
 | 17/0163571 |  Murilo Loiola Dantas |
 
 ## Sobre 
-Descreva os objetivos do seu projeto e como ele funciona. 
+Flood Rush é um jogo do gênero *escape*. O prédio está sendo inundado aos poucos e o
+objetivo do jogador é encontrar a saída antes que a
+inundação o alcance.
 
 ## Screenshots
 Adicione 3 ou mais screenshots do projeto em funcionamento.
