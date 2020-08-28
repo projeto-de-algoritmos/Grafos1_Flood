@@ -20,8 +20,8 @@ Temas:
 ## Alunos
 |Matrícula | Aluno |
 | -- | -- |
-| xx/xxxxxx  |  xxxx xxxx xxxxx |
-| xx/xxxxxx  |  xxxx xxxx xxxxx |
+| 17/0129411  |  Guilherme Mendes Pereira |
+| 170163571 |  Murilo Loiola Dantas |
 
 ## Sobre 
 Descreva os objetivos do seu projeto e como ele funciona. 
