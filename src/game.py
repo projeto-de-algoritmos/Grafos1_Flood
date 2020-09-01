@@ -2,6 +2,7 @@ import pygame
 import sys
 import random
 import math
+import colors
 
 # width and height of screen
 size = (800, 600)
@@ -10,10 +11,6 @@ spacing = 80
 # compute x and y offset to avoid nodes spawning offscreen
 starting_x = abs((((size[0] - 20) // spacing) * spacing) - size[0]) / 2
 starting_y = abs((((size[1] - 20) // spacing) * spacing) - size[1]) / 2
-# background, node and player color in rgb
-color = (255, 255, 255)
-node_color = (0, 0, 0)
-player_color = (0, 255, 0)
 # clock dictates how fast the screen is refreshed
 clock = pygame.time.Clock()
 # constant for arrow function
@@ -24,11 +21,11 @@ pygame.init()
 
 # setting screen size and background color
 screen = pygame.display.set_mode(size)
-screen.fill(color)
+screen.fill(colors.COLOR)
 
 # setting program name and icon
 pygame.display.set_caption("Flood Rush")
-icon = pygame.image.load('wave.png')
+icon = pygame.image.load('images/wave.png')
 pygame.display.set_icon(icon)
 
 
@@ -46,10 +43,10 @@ class Graph(object):
         for node in self.nodes:
             # draws player node on screen, player position takes precedence over regular nodes
             if player.position == (node.rect[0], node.rect[1]):
-                pygame.draw.circle(screen, player.color, node.rect.center, 10)
+                pygame.draw.circle(screen, colors.PLAYER, node.rect.center, 10)
                 continue
             # draws regular nodes on screen
-            pygame.draw.circle(screen, node.color, node.rect.center, 10)
+            pygame.draw.circle(screen, colors.NODE, node.rect.center, 10)
 
 
 class Node(object):
@@ -59,13 +56,13 @@ class Node(object):
         self.id = self.__class__.counter
         self.__class__.counter += 1
         self.rect = None
-        self.color = node_color
+        self.color = colors.NODE
         self.neighbors = set()
 
 
 class Player(object):
     def __init__(self):
-        self.color = player_color
+        self.color = colors.PLAYER
         self.position = (random.randrange(starting_x, (((size[0] - 20) // spacing) * spacing), spacing),
                          random.randrange(starting_y, (((size[1] - 20) // spacing) * spacing), spacing))
 
@@ -117,31 +114,31 @@ def create_graph():
                 # add neighbor to node's list of neighbors
                 node.neighbors.add(neighbor)
                 # draws arrow/edge from node to neighbor
-                arrow(screen, node_color, node_color, node.rect.center, (neighbor.rect.center[0]+15,
+                arrow(screen, colors.NODE, colors.NODE, node.rect.center, (neighbor.rect.center[0]+15,
                                                                          neighbor.rect.center[1]), 5)
             '''if pos[1] - spacing > 0:
                 if not random.randint(0, 2):
                     neighbor = graph.positions[pos[0] - spacing, pos[1] - spacing]
                     node.neighbors.add(neighbor)
-                    arrow(screen, node_color, node_color, node.rect.center, (neighbor.rect.center[0] + 10,
+                    arrow(screen, colors.NODE, colors.NODE, node.rect.center, (neighbor.rect.center[0] + 10,
                                                                              neighbor.rect.center[1] + 10), 5)'''
         if pos[0] + spacing < size[0]:
             if not random.randint(0, 1):
                 neighbor = graph.positions[pos[0] + spacing, pos[1]]
                 node.neighbors.add(neighbor)
-                arrow(screen, node_color, node_color, node.rect.center, (neighbor.rect.center[0] - 15,
+                arrow(screen, colors.NODE, colors.NODE, node.rect.center, (neighbor.rect.center[0] - 15,
                                                                          neighbor.rect.center[1]), 5)
         if pos[1] - spacing > 0:
             if not random.randint(0, 1):
                 neighbor = graph.positions[pos[0], pos[1] - spacing]
                 node.neighbors.add(neighbor)
-                arrow(screen, node_color, node_color, node.rect.center, (neighbor.rect.center[0],
+                arrow(screen, colors.NODE, colors.NODE, node.rect.center, (neighbor.rect.center[0],
                                                                          neighbor.rect.center[1] + 15), 5)
         if pos[1] + spacing < size[1]:
             if not random.randint(0, 1):
                 neighbor = graph.positions[pos[0], pos[1] + spacing]
                 node.neighbors.add(neighbor)
-                arrow(screen, node_color, node_color, node.rect.center, (neighbor.rect.center[0],
+                arrow(screen, colors.NODE, colors.NODE, node.rect.center, (neighbor.rect.center[0],
                                                                          neighbor.rect.center[1] - 15), 5)
 
         pos[0] += spacing
