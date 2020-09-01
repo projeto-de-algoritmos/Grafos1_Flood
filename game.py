@@ -5,14 +5,18 @@ import math
 
 # width and height of screen
 size = (800, 600)
+# space between nodes
 spacing = 80
+# compute x and y offset to avoid nodes spawning offscreen
 starting_x = abs((((size[0] - 20) // spacing) * spacing) - size[0]) / 2
 starting_y = abs((((size[1] - 20) // spacing) * spacing) - size[1]) / 2
-# background color in rgb
+# background, node and player color in rgb
 color = (255, 255, 255)
 node_color = (0, 0, 0)
 player_color = (0, 255, 0)
+# clock dictates how fast the screen is refreshed
 clock = pygame.time.Clock()
+# constant for arrow function
 rad = math.pi / 180
 
 # initializing pygame library
@@ -35,13 +39,16 @@ class Graph(object):
 
     def add_nodes(self, node, pos):
         self.nodes.add(node)
+        # relate each node to it's position, used later for edge generation
         self.positions[pos] = node
 
     def update(self, player):
         for node in self.nodes:
+            # draws player node on screen, player position takes precedence over regular nodes
             if player.position == (node.rect[0], node.rect[1]):
                 pygame.draw.circle(screen, player.color, node.rect.center, 10)
                 continue
+            # draws regular nodes on screen
             pygame.draw.circle(screen, node.color, node.rect.center, 10)
 
 
@@ -66,13 +73,23 @@ class Player(object):
 def create_graph():
     pos = [starting_x, starting_y]
     graph = Graph()
-    # will be used to connect nodes later on
     nodes = []
+    # loop runs until bottom right corner of screen is reached
+    # in pygame any given position within the screen is dictated by it's x, y coordinates
+    # x and y both starts at 0 on the top left corner
+    # x increases as you go right, y increases as you go down
+    # meaning bottom right of the screen == screen size (dictated by screen variable)
     while pos[1] <= size[1] - starting_y:
         node = Node()
+        # saves node + position on graph
         graph.add_nodes(node, (pos[0], pos[1]))
         nodes.append(node)
+        # creates a Rect pygame object for each node
+        # first two variables refers to object coordinates, last two refers to object size
+        # this means that pygame actually sees each node as a 20 by 20 pixel square
+        # they appear as cricles because they are drawn as such on update() function
         node.rect = pygame.Rect(pos[0], pos[1], 20, 20)
+        # guarantees there will be no nodes generating off screen to the right
         if pos[0] == size[0] - starting_x:
             pos[0] = starting_x
             pos[1] += spacing
@@ -80,16 +97,26 @@ def create_graph():
         pos[0] += spacing
 
     pos = [starting_x, starting_y]
+    # loop to generate edges
     for node in nodes:
+        # guarantees it won't go offscreen
         if pos[1] > size[1] - starting_y:
             break
         if pos[0] > size[0] - starting_x:
             pos[0] = starting_x
             pos[1] += spacing
+
+        # following four if's verifies if there is a neighboring node to the left, right, up and down respectively
+        # for each given node
         if pos[0] - spacing > 0:
+            # for example, if there is a neighboring node to the left, it has a 50% chance of generating an edge
+            # between the node and it's neighbor
             if not random.randint(0, 1):
+                # assigns neighbor node to variable neighbor
                 neighbor = graph.positions[pos[0] - spacing, pos[1]]
+                # add neighbor to node's list of neighbors
                 node.neighbors.add(neighbor)
+                # draws arrow/edge from node to neighbor
                 arrow(screen, node_color, node_color, node.rect.center, (neighbor.rect.center[0]+15,
                                                                          neighbor.rect.center[1]), 5)
             '''if pos[1] - spacing > 0:
@@ -122,6 +149,7 @@ def create_graph():
     return graph
 
 
+# function to transform line to line with arrow
 def arrow(scr, lcolor, tricolor, start, end, trirad, thickness=1):
     pygame.draw.line(scr, lcolor, start, end, thickness)
     rotation = (math.atan2(start[1] - end[1], end[0] - start[0])) + math.pi / 2
@@ -140,18 +168,25 @@ def main():
     # all player interaction should be handled within this loop
     while True:
         graph.update(player)
+        # loop constantly reads for player interaction
         for event in pygame.event.get():
+            # if the player presses the x button
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
+            # if the player presses the mouse button
             if event.type == pygame.MOUSEBUTTONDOWN:
+                # get the position of the click
                 x, y = event.pos
+                # rounds the position down to node size
                 x -= x % 20
                 y -= y % 20
+                # changes player position
                 player.position = x, y
 
         # update the display to present changes on screen
         pygame.display.update()
+        # clock is currently 60 frames per second
         clock.tick(60)
 
 
