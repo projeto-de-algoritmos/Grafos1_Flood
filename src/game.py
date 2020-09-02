@@ -3,6 +3,8 @@ import sys
 import random
 import math
 import colors
+import threading
+import time
 
 # width and height of screen
 size = (800, 600)
@@ -39,13 +41,17 @@ class Graph(object):
         # relate each node to it's position, used later for edge generation
         self.positions[pos] = node
 
-    def update(self, player):
+    def update(self, player, out):
         for node in self.nodes:
+            # draws flooded nodes
             if node.flooded:
                 draw_circle(node, colors.FLOODED)
-            # draws player node on screen, player position takes precedence over regular nodes
+            # draws player node on screen
             elif player.position == (node.rect[0], node.rect[1]):
                 draw_circle(node, colors.PLAYER)
+                # draws exit node
+            elif out.position == (node.rect[0], node.rect[1]):
+                draw_circle(node, colors.EXIT)
             # draws regular nodes on screen
             else:
                 draw_circle(node, colors.NODE)
@@ -64,6 +70,12 @@ class Node(object):
 class Player(object):
     def __init__(self):
         self.color = colors.PLAYER
+        self.position = random_pos()
+
+
+class Exit(object):
+    def __init__(self):
+        self.color = colors.EXIT
         self.position = random_pos()
 
 
@@ -146,11 +158,13 @@ def create_graph():
     return graph
 
 
+# returns random position
 def random_pos():
     return (random.randrange(starting_x, (((size[0] - 20) // spacing) * spacing), spacing),
             random.randrange(starting_y, (((size[1] - 20) // spacing) * spacing), spacing))
 
 
+# draws circle on screen
 def draw_circle(node, color):
     return pygame.draw.circle(screen, color, node.rect.center, 10)
 
@@ -167,30 +181,45 @@ def arrow(scr, lcolor, tricolor, start, end, trirad, thickness=1):
                                          end[1] + trirad * math.cos(rotation + 120 * rad))))
 
 
+# flood function, runs until all reachable nodes are flooded or program is closed
 def flood_fill(node):
-    if not node.flooded:
-        node.flooded = True
-        for neighbor in node.neighbors:
-            flood_fill(neighbor)
+    q = [node]
+    while q:
+        if stop_thread:
+            break
+        flooded = q.pop(0)
+        flooded.flooded = True
+        time.sleep(1)
+        for neighbor in flooded.neighbors:
+            if not neighbor.flooded:
+                q.append(neighbor)
 
 
 def main():
     graph = create_graph()
     player = Player()
+    out = Exit()
+
     flood_pos = random_pos()
     flood_node = graph.positions[flood_pos[0], flood_pos[1]]
+
+    global stop_thread
+    stop_thread = False
+    x = threading.Thread(target=flood_fill, args=(flood_node,))
+    x.start()
+
     # main game loop will run as long as the user doesn't exit the program
     # all player interaction should be handled within this loop
     while True:
-        graph.update(player)
-        # flood_fill(flood_node)
+        graph.update(player, out)
         # loop constantly reads for player interaction
         for event in pygame.event.get():
             # if the player presses the x button
             if event.type == pygame.QUIT:
+                stop_thread = True
                 pygame.quit()
                 sys.exit()
-            # if the player presses the mouse button
+            # if the player presses any key
             if event.type == pygame.KEYDOWN:
                 (x, y) = player.position
                 if event.key == pygame.K_UP:
