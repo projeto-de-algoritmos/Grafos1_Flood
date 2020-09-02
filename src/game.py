@@ -41,30 +41,30 @@ class Graph(object):
 
     def update(self, player):
         for node in self.nodes:
+            if node.flooded:
+                draw_circle(node, colors.FLOODED)
             # draws player node on screen, player position takes precedence over regular nodes
-            if player.position == (node.rect[0], node.rect[1]):
-                pygame.draw.circle(screen, colors.PLAYER, node.rect.center, 10)
-                continue
+            elif player.position == (node.rect[0], node.rect[1]):
+                draw_circle(node, colors.PLAYER)
             # draws regular nodes on screen
-            pygame.draw.circle(screen, colors.NODE, node.rect.center, 10)
+            else:
+                draw_circle(node, colors.NODE)
 
 
 class Node(object):
     counter = 0
 
     def __init__(self):
-        self.id = self.__class__.counter
-        self.__class__.counter += 1
         self.rect = None
         self.color = colors.NODE
         self.neighbors = set()
+        self.flooded = False
 
 
 class Player(object):
     def __init__(self):
         self.color = colors.PLAYER
-        self.position = (random.randrange(starting_x, (((size[0] - 20) // spacing) * spacing), spacing),
-                         random.randrange(starting_y, (((size[1] - 20) // spacing) * spacing), spacing))
+        self.position = random_pos()
 
 
 def create_graph():
@@ -96,6 +96,7 @@ def create_graph():
     pos = [starting_x, starting_y]
     # loop to generate edges
     for node in nodes:
+        alone = True
         # guarantees it won't go offscreen
         if pos[1] > size[1] - starting_y:
             break
@@ -103,47 +104,55 @@ def create_graph():
             pos[0] = starting_x
             pos[1] += spacing
 
-        # following four if's verifies if there is a neighboring node to the left, right, up and down respectively
-        # for each given node
-        if pos[0] - spacing > 0:
-            # for example, if there is a neighboring node to the left, it has a 50% chance of generating an edge
-            # between the node and it's neighbor
-            if not random.randint(0, 1):
-                # assigns neighbor node to variable neighbor
-                neighbor = graph.positions[pos[0] - spacing, pos[1]]
-                # add neighbor to node's list of neighbors
-                node.neighbors.add(neighbor)
-                # draws arrow/edge from node to neighbor
-                arrow(screen, colors.NODE, colors.NODE, node.rect.center, (neighbor.rect.center[0]+15,
-                                                                         neighbor.rect.center[1]), 5)
-            '''if pos[1] - spacing > 0:
-                if not random.randint(0, 2):
-                    neighbor = graph.positions[pos[0] - spacing, pos[1] - spacing]
+        while alone:
+            # following four if's verifies if there is a neighboring node to the left, right, up and down respectively
+            # for each given node
+            if pos[0] - spacing > 0:
+                # for example, if there is a neighboring node to the left, it has a 50% chance of generating an edge
+                # between the node and it's neighbor
+                if not random.randint(0, 1):
+                    # assigns neighbor node to variable neighbor
+                    neighbor = graph.positions[pos[0] - spacing, pos[1]]
+                    # add neighbor to node's list of neighbors
                     node.neighbors.add(neighbor)
-                    arrow(screen, colors.NODE, colors.NODE, node.rect.center, (neighbor.rect.center[0] + 10,
-                                                                             neighbor.rect.center[1] + 10), 5)'''
-        if pos[0] + spacing < size[0]:
-            if not random.randint(0, 1):
-                neighbor = graph.positions[pos[0] + spacing, pos[1]]
-                node.neighbors.add(neighbor)
-                arrow(screen, colors.NODE, colors.NODE, node.rect.center, (neighbor.rect.center[0] - 15,
-                                                                         neighbor.rect.center[1]), 5)
-        if pos[1] - spacing > 0:
-            if not random.randint(0, 1):
-                neighbor = graph.positions[pos[0], pos[1] - spacing]
-                node.neighbors.add(neighbor)
-                arrow(screen, colors.NODE, colors.NODE, node.rect.center, (neighbor.rect.center[0],
-                                                                         neighbor.rect.center[1] + 15), 5)
-        if pos[1] + spacing < size[1]:
-            if not random.randint(0, 1):
-                neighbor = graph.positions[pos[0], pos[1] + spacing]
-                node.neighbors.add(neighbor)
-                arrow(screen, colors.NODE, colors.NODE, node.rect.center, (neighbor.rect.center[0],
-                                                                         neighbor.rect.center[1] - 15), 5)
+                    # draws arrow/edge from node to neighbor
+                    arrow(screen, colors.NODE, colors.NODE, node.rect.center, (neighbor.rect.center[0] + 15,
+                                                                               neighbor.rect.center[1]), 5)
+                    alone = False
+            if pos[0] + spacing < size[0]:
+                if not random.randint(0, 1):
+                    neighbor = graph.positions[pos[0] + spacing, pos[1]]
+                    node.neighbors.add(neighbor)
+                    arrow(screen, colors.NODE, colors.NODE, node.rect.center, (neighbor.rect.center[0] - 15,
+                                                                               neighbor.rect.center[1]), 5)
+                    alone = False
+            if pos[1] - spacing > 0:
+                if not random.randint(0, 1):
+                    neighbor = graph.positions[pos[0], pos[1] - spacing]
+                    node.neighbors.add(neighbor)
+                    arrow(screen, colors.NODE, colors.NODE, node.rect.center, (neighbor.rect.center[0],
+                                                                               neighbor.rect.center[1] + 15), 5)
+                    alone = False
+            if pos[1] + spacing < size[1]:
+                if not random.randint(0, 1):
+                    neighbor = graph.positions[pos[0], pos[1] + spacing]
+                    node.neighbors.add(neighbor)
+                    arrow(screen, colors.NODE, colors.NODE, node.rect.center, (neighbor.rect.center[0],
+                                                                               neighbor.rect.center[1] - 15), 5)
+                    alone = False
 
         pos[0] += spacing
 
     return graph
+
+
+def random_pos():
+    return (random.randrange(starting_x, (((size[0] - 20) // spacing) * spacing), spacing),
+            random.randrange(starting_y, (((size[1] - 20) // spacing) * spacing), spacing))
+
+
+def draw_circle(node, color):
+    return pygame.draw.circle(screen, color, node.rect.center, 10)
 
 
 # function to transform line to line with arrow
@@ -158,13 +167,23 @@ def arrow(scr, lcolor, tricolor, start, end, trirad, thickness=1):
                                          end[1] + trirad * math.cos(rotation + 120 * rad))))
 
 
+def flood_fill(node):
+    if not node.flooded:
+        node.flooded = True
+        for neighbor in node.neighbors:
+            flood_fill(neighbor)
+
+
 def main():
     graph = create_graph()
     player = Player()
+    flood_pos = random_pos()
+    flood_node = graph.positions[flood_pos[0], flood_pos[1]]
     # main game loop will run as long as the user doesn't exit the program
     # all player interaction should be handled within this loop
     while True:
         graph.update(player)
+        # flood_fill(flood_node)
         # loop constantly reads for player interaction
         for event in pygame.event.get():
             # if the player presses the x button
@@ -172,14 +191,24 @@ def main():
                 pygame.quit()
                 sys.exit()
             # if the player presses the mouse button
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                # get the position of the click
-                x, y = event.pos
-                # rounds the position down to node size
-                x -= x % 20
-                y -= y % 20
-                # changes player position
-                player.position = x, y
+            if event.type == pygame.KEYDOWN:
+                (x, y) = player.position
+                if event.key == pygame.K_UP:
+                    if (x, y-spacing) in graph.positions:
+                        if graph.positions[x, y - spacing] in graph.positions[x, y].neighbors:
+                            player.position = x, y - spacing
+                elif event.key == pygame.K_DOWN:
+                    if (x, y + spacing) in graph.positions:
+                        if graph.positions[x, y + spacing] in graph.positions[x, y].neighbors:
+                            player.position = x, y + spacing
+                elif event.key == pygame.K_LEFT:
+                    if (x - spacing, y) in graph.positions:
+                        if graph.positions[x - spacing, y] in graph.positions[x, y].neighbors:
+                            player.position = x - spacing, y
+                elif event.key == pygame.K_RIGHT:
+                    if (x + spacing, y) in graph.positions:
+                        if graph.positions[x + spacing, y] in graph.positions[x, y].neighbors:
+                            player.position = x + spacing, y
 
         # update the display to present changes on screen
         pygame.display.update()
