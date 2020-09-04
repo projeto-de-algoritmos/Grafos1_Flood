@@ -1,10 +1,11 @@
-import pygame
-import sys
-import random
 import math
-import colors
+import random
+import sys
 import threading
 import time
+
+import colors
+import pygame
 
 # width and height of screen
 size = (800, 600)
@@ -29,6 +30,14 @@ screen.fill(colors.COLOR)
 pygame.display.set_caption("Flood Rush")
 icon = pygame.image.load('images/wave.png')
 pygame.display.set_icon(icon)
+
+# game Win text
+win_font = pygame.font.Font('freesansbold.ttf', 64)
+
+
+def game_win_text():
+    win_text = win_font.render("YOU WIN!", True, colors.BLUE)
+    screen.blit(win_text, (250, 250))
 
 
 class Graph(object):
@@ -223,7 +232,7 @@ def main():
             if event.type == pygame.KEYDOWN:
                 (x, y) = player.position
                 if event.key == pygame.K_UP:
-                    if (x, y-spacing) in graph.positions:
+                    if (x, y - spacing) in graph.positions:
                         if graph.positions[x, y - spacing] in graph.positions[x, y].neighbors:
                             player.position = x, y - spacing
                 elif event.key == pygame.K_DOWN:
@@ -238,6 +247,9 @@ def main():
                     if (x + spacing, y) in graph.positions:
                         if graph.positions[x + spacing, y] in graph.positions[x, y].neighbors:
                             player.position = x + spacing, y
+                if player.position == out.position:
+                    game_win_text()
+                    stop_thread = True
 
         # update the display to present changes on screen
         pygame.display.update()
