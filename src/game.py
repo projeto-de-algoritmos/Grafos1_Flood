@@ -3,6 +3,7 @@ import random
 import sys
 import threading
 import time
+import copy
 
 import colors
 import pygame
@@ -40,6 +41,11 @@ def game_win_text():
     screen.blit(win_text, (250, 250))
 
 
+def game_lose_text():
+    win_text = win_font.render("YOU LOSE!", True, colors.BLUE)
+    screen.blit(win_text, (250, 250))
+
+
 class Graph(object):
     def __init__(self):
         self.nodes = set()
@@ -70,9 +76,11 @@ class Node(object):
     counter = 0
 
     def __init__(self):
+        self.id = self.__class__.counter
+        self.__class__.counter += 1
         self.rect = None
         self.color = colors.NODE
-        self.neighbors = set()
+        self.neighbours = set()
         self.flooded = False
 
 
@@ -126,45 +134,73 @@ def create_graph():
             pos[1] += spacing
 
         while alone:
-            # following four if's verifies if there is a neighboring node to the left, right, up and down respectively
+            # following four if's verifies if there is a neighbouring node to the left, right, up and down respectively
             # for each given node
             if pos[0] - spacing > 0:
-                # for example, if there is a neighboring node to the left, it has a 50% chance of generating an edge
-                # between the node and it's neighbor
-                if not random.randint(0, 1):
-                    # assigns neighbor node to variable neighbor
-                    neighbor = graph.positions[pos[0] - spacing, pos[1]]
-                    # add neighbor to node's list of neighbors
-                    node.neighbors.add(neighbor)
-                    # draws arrow/edge from node to neighbor
-                    arrow(screen, colors.NODE, colors.NODE, node.rect.center, (neighbor.rect.center[0] + 15,
-                                                                               neighbor.rect.center[1]), 5)
+                # for example, if there is a neighbouring node to the left, it has a 50% chance of generating an edge
+                # between the node and it's neighbour
+                if random.randint(0, 2):
+                    # assigns neighbour node to variable neighbour
+                    neighbour = graph.positions[pos[0] - spacing, pos[1]]
+                    # add neighbour to node's list of neighbours
+                    node.neighbours.add(neighbour)
+                    # draws arrow/edge from node to neighbour
+                    arrow(screen, colors.NODE, colors.NODE, node.rect.center, (neighbour.rect.center[0] + 15,
+                                                                               neighbour.rect.center[1]), 5)
                     alone = False
             if pos[0] + spacing < size[0]:
-                if not random.randint(0, 1):
-                    neighbor = graph.positions[pos[0] + spacing, pos[1]]
-                    node.neighbors.add(neighbor)
-                    arrow(screen, colors.NODE, colors.NODE, node.rect.center, (neighbor.rect.center[0] - 15,
-                                                                               neighbor.rect.center[1]), 5)
+                if random.randint(0, 2):
+                    neighbour = graph.positions[pos[0] + spacing, pos[1]]
+                    node.neighbours.add(neighbour)
+                    arrow(screen, colors.NODE, colors.NODE, node.rect.center, (neighbour.rect.center[0] - 15,
+                                                                               neighbour.rect.center[1]), 5)
                     alone = False
             if pos[1] - spacing > 0:
-                if not random.randint(0, 1):
-                    neighbor = graph.positions[pos[0], pos[1] - spacing]
-                    node.neighbors.add(neighbor)
-                    arrow(screen, colors.NODE, colors.NODE, node.rect.center, (neighbor.rect.center[0],
-                                                                               neighbor.rect.center[1] + 15), 5)
+                if random.randint(0, 2):
+                    neighbour = graph.positions[pos[0], pos[1] - spacing]
+                    node.neighbours.add(neighbour)
+                    arrow(screen, colors.NODE, colors.NODE, node.rect.center, (neighbour.rect.center[0],
+                                                                               neighbour.rect.center[1] + 15), 5)
                     alone = False
             if pos[1] + spacing < size[1]:
-                if not random.randint(0, 1):
-                    neighbor = graph.positions[pos[0], pos[1] + spacing]
-                    node.neighbors.add(neighbor)
-                    arrow(screen, colors.NODE, colors.NODE, node.rect.center, (neighbor.rect.center[0],
-                                                                               neighbor.rect.center[1] - 15), 5)
+                if random.randint(0, 2):
+                    neighbour = graph.positions[pos[0], pos[1] + spacing]
+                    node.neighbours.add(neighbour)
+                    arrow(screen, colors.NODE, colors.NODE, node.rect.center, (neighbour.rect.center[0],
+                                                                               neighbour.rect.center[1] - 15), 5)
                     alone = False
 
         pos[0] += spacing
 
     return graph
+
+
+def reverse_graph(graph):
+    rev_graph = copy.deepcopy(graph)
+    for node in rev_graph.nodes:
+        node.neighbours.clear()
+    for node in graph.nodes:
+        for neighbour in node.neighbours:
+            rev_graph.positions[neighbour.rect[0], neighbour.rect[1]].neighbours.add(node)
+    return rev_graph
+
+
+def strongly_connect(graph, start_pos):
+    start_node = graph.positions[start_pos]
+    rev_graph = reverse_graph(graph)
+
+
+def bfs(graph, node):
+    node.flooded = True
+    queue = [node]
+
+    while queue:
+        s = queue.pop()
+
+        for neighbour in s:
+            if not neighbour.flooded:
+                neighbour.flooded = True
+                queue.append(neighbour)
 
 
 # returns random position
@@ -198,16 +234,17 @@ def flood_fill(node):
             break
         flooded = q.pop(0)
         flooded.flooded = True
-        time.sleep(1)
-        for neighbor in flooded.neighbors:
-            if not neighbor.flooded:
-                q.append(neighbor)
+        time.sleep(0.2)
+        for neighbour in flooded.neighbours:
+            if not neighbour.flooded:
+                q.append(neighbour)
 
 
 def main():
     graph = create_graph()
     player = Player()
     out = Exit()
+    # strongly_connect(graph, player.position)
 
     flood_pos = random_pos()
     flood_node = graph.positions[flood_pos[0], flood_pos[1]]
@@ -233,23 +270,26 @@ def main():
                 (x, y) = player.position
                 if event.key == pygame.K_UP:
                     if (x, y - spacing) in graph.positions:
-                        if graph.positions[x, y - spacing] in graph.positions[x, y].neighbors:
+                        if graph.positions[x, y - spacing] in graph.positions[x, y].neighbours:
                             player.position = x, y - spacing
                 elif event.key == pygame.K_DOWN:
                     if (x, y + spacing) in graph.positions:
-                        if graph.positions[x, y + spacing] in graph.positions[x, y].neighbors:
+                        if graph.positions[x, y + spacing] in graph.positions[x, y].neighbours:
                             player.position = x, y + spacing
                 elif event.key == pygame.K_LEFT:
                     if (x - spacing, y) in graph.positions:
-                        if graph.positions[x - spacing, y] in graph.positions[x, y].neighbors:
+                        if graph.positions[x - spacing, y] in graph.positions[x, y].neighbours:
                             player.position = x - spacing, y
                 elif event.key == pygame.K_RIGHT:
                     if (x + spacing, y) in graph.positions:
-                        if graph.positions[x + spacing, y] in graph.positions[x, y].neighbors:
+                        if graph.positions[x + spacing, y] in graph.positions[x, y].neighbours:
                             player.position = x + spacing, y
-                if player.position == out.position:
-                    game_win_text()
-                    stop_thread = True
+            if player.position == out.position:
+                game_win_text()
+                stop_thread = True
+            elif graph.positions[player.position].flooded or graph.positions[out.position].flooded:
+                game_lose_text()
+                stop_thread = True
 
         # update the display to present changes on screen
         pygame.display.update()
