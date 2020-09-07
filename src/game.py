@@ -8,7 +8,6 @@ import time
 import colors
 import pygame
 
-BRIGHT_GREEN = (0, 255, 0)
 # width and height of screen
 size = (800, 600)
 # space between nodes
@@ -27,15 +26,17 @@ pygame.init()
 
 # setting screen size and background color
 screen = pygame.display.set_mode(size)
-screen.fill(colors.COLOR)
+screen.fill(colors.WHITE)
 
 # setting program name and icon
 pygame.display.set_caption("Flood Rush")
 icon = pygame.image.load('images/wave.png')
+menu = pygame.image.load('images/menu.png')
+icon_big = pygame.transform.scale(icon, (80, 80))
 pygame.display.set_icon(icon)
 
 # game Win text
-win_font = pygame.font.Font('freesansbold.ttf', 64)
+win_font = pygame.font.SysFont('comicsansms', 64)
 
 
 def game_win_text():
@@ -44,28 +45,8 @@ def game_win_text():
 
 
 def game_lose_text():
-    win_text = win_font.render("YOU LOSE!", True, colors.BLUE)
+    win_text = win_font.render("YOU LOSE!", True, colors.EXIT)
     screen.blit(win_text, (250, 250))
-
-
-def game_menu():
-    menu = True
-
-    while menu:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                quit()
-        screen.fill(colors.COLOR)
-        largeText = pygame.font.Font('freesansbold.ttf', 115)
-        TextSurf, TextRect = text_objects("Flood Rush", largeText)
-        TextRect.center = ((800 / 2), (600 / 2))
-        screen.blit(TextSurf, TextRect)
-
-        button('START', 350, 450, 100, 50, BRIGHT_GREEN, game_loop)
-
-        pygame.display.update()
-        clock.tick(15)
 
 
 def text_objects(text, font):
@@ -78,14 +59,57 @@ def button(msg, x, y, w, h, ic, action=None):
     click = pygame.mouse.get_pressed()
     # print(click)
     if x + w > mouse[0] > x and y + h > mouse[1] > y:
+
         if click[0] == 1 and action != None:
             action()
     else:
         pygame.draw.rect(screen, ic, (x, y, w, h))
+
     smallText = pygame.font.SysFont("comicsansms", 20)
     textSurf, textRect = text_objects(msg, smallText)
     textRect.center = ((x + (w / 2)), (y + (h / 2)))
     screen.blit(textSurf, textRect)
+
+
+def menuGameWindow():
+    menu_game = True
+
+    while menu_game:
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+
+        screen.fill(colors.WHITE)
+        screen.blit(menu, (0, 0))
+
+        # screen.fill(colors.WHITE)
+
+        button('START', 350, 450, 100, 50, colors.BRIGHT_GREEN, game_loop)
+        pygame.display.update()
+        clock.tick(15)
+
+
+def restartGameWindow():
+    restart_game = True
+
+    while restart_game:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+
+        button('RESTART', 250, 450, 100, 50, colors.GREEN, game_loop)
+        button('QUIT', 450, 450, 100, 50, colors.EXIT, quitgame)
+
+        pygame.display.update()
+        clock.tick(15)
+
+
+def quitgame():
+    pygame.quit()
+    quit()
 
 
 class Graph(object):
@@ -375,6 +399,7 @@ def game_loop():
     # main game loop will run as long as the user doesn't exit the program
     # all player interaction should be handled within this loop
     while True:
+
         graph.update(player, out)
         # loop constantly reads for player interaction
         for event in pygame.event.get():
@@ -404,9 +429,11 @@ def game_loop():
                             player.position = x + spacing, y
             if player.position == out.position:
                 game_win_text()
+                restartGameWindow()
                 stop_thread = True
             elif graph.positions[player.position].flooded or graph.positions[out.position].flooded:
                 game_lose_text()
+                restartGameWindow()
                 stop_thread = True
 
         # update the display to present changes on screen
@@ -416,7 +443,7 @@ def game_loop():
 
 
 def main():
-    game_menu()
+    menuGameWindow()
     game_loop()
 
 
