@@ -1,13 +1,14 @@
+import copy
 import math
 import random
 import sys
 import threading
 import time
-import copy
 
 import colors
 import pygame
 
+BRIGHT_GREEN = (0, 255, 0)
 # width and height of screen
 size = (800, 600)
 # space between nodes
@@ -45,6 +46,46 @@ def game_win_text():
 def game_lose_text():
     win_text = win_font.render("YOU LOSE!", True, colors.BLUE)
     screen.blit(win_text, (250, 250))
+
+
+def game_menu():
+    menu = True
+
+    while menu:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+        screen.fill(colors.COLOR)
+        largeText = pygame.font.Font('freesansbold.ttf', 115)
+        TextSurf, TextRect = text_objects("Flood Rush", largeText)
+        TextRect.center = ((800 / 2), (600 / 2))
+        screen.blit(TextSurf, TextRect)
+
+        button('START', 350, 450, 100, 50, BRIGHT_GREEN, game_loop)
+
+        pygame.display.update()
+        clock.tick(15)
+
+
+def text_objects(text, font):
+    textSurface = font.render(text, True, colors.NODE)
+    return textSurface, textSurface.get_rect()
+
+
+def button(msg, x, y, w, h, ic, action=None):
+    mouse = pygame.mouse.get_pos()
+    click = pygame.mouse.get_pressed()
+    # print(click)
+    if x + w > mouse[0] > x and y + h > mouse[1] > y:
+        if click[0] == 1 and action != None:
+            action()
+    else:
+        pygame.draw.rect(screen, ic, (x, y, w, h))
+    smallText = pygame.font.SysFont("comicsansms", 20)
+    textSurf, textRect = text_objects(msg, smallText)
+    textRect.center = ((x + (w / 2)), (y + (h / 2)))
+    screen.blit(textSurf, textRect)
 
 
 class Graph(object):
@@ -315,7 +356,7 @@ def flood_fill(node):
                 q.append(neighbour)
 
 
-def main():
+def game_loop():
     graph = create_graph()
     player = Player()
     out = Exit()
@@ -372,6 +413,11 @@ def main():
         pygame.display.update()
         # clock is currently 60 frames per second
         clock.tick(60)
+
+
+def main():
+    game_menu()
+    game_loop()
 
 
 if __name__ == "__main__":
