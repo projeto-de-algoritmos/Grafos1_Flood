@@ -41,17 +41,45 @@ icon_big = pygame.transform.scale(icon, (80, 80))
 pygame.display.set_icon(icon)
 
 # game Win text
-win_font = pygame.font.SysFont('comicsansms', 64)
+win_font = pygame.font.SysFont('comicsansms', 150)
+
+
+def text_hollow(font, message, font_color):
+    not_color = [c ^ 0xFF for c in font_color]
+    base = font.render(message, 0, font_color, not_color)
+    size = base.get_width() + 2, base.get_height() + 2
+    img = pygame.Surface(size, 16)
+    img.fill(not_color)
+    base.set_colorkey(0)
+    img.blit(base, (0, 0))
+    img.blit(base, (2, 0))
+    img.blit(base, (0, 2))
+    img.blit(base, (2, 2))
+    base.set_colorkey(0)
+    base.set_palette_at(1, not_color)
+    img.blit(base, (1, 1))
+    img.set_colorkey(not_color)
+    return img
+
+
+def text_outline(font, message, font_color, outline_color):
+    base = font.render(message, 0, font_color)
+    outline = text_hollow(font, message, outline_color)
+    img = pygame.Surface(outline.get_size(), 16)
+    img.blit(base, (1, 1))
+    img.blit(outline, (0, 0))
+    img.set_colorkey(0)
+    return img
 
 
 def game_win_text():
-    win_text = win_font.render("YOU WIN!", True, colors.BLUE)
-    screen.blit(win_text, (530, 250))
+    win_text = text_outline(win_font, 'YOU WIN!', colors.WHITE, colors.BLACK)
+    screen.blit(win_text, (430, 300))
 
 
 def game_lose_text():
-    win_text = win_font.render("YOU LOSE!", True, colors.EXIT)
-    screen.blit(win_text, (530, 250))
+    win_text = text_outline(win_font, 'YOU LOSE!', colors.WHITE, colors.BLACK)
+    screen.blit(win_text, (410, 300))
 
 
 def text_objects(text, font):
@@ -88,8 +116,6 @@ def menu_game_window():
         screen.fill(colors.WHITE)
         screen.blit(menu, (0, 0))
 
-        # screen.fill(colors.WHITE)
-
         button('START', 590, 550, 200, 100, colors.BRIGHT_GREEN, game_loop)
         pygame.display.update()
         clock.tick(15)
@@ -102,8 +128,6 @@ def restart_game_window():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 quit_game()
-
-        pygame.draw.rect(screen, colors.WHITE, (510, 200, 400, 200))
 
         button('RESTART', 530, 450, 100, 50, colors.GREEN, game_loop)
         # button('NEXT', 530, 450, 100, 50, colors.BLUE, next_level)
@@ -428,12 +452,12 @@ def game_loop():
         graph.update(player, out)
 
         if player.position == out.position:
-            restart_game_window()
             game_win_text()
+            restart_game_window()
             quit_game()
         elif graph.positions[player.position].flooded or graph.positions[out.position].flooded:
-            restart_game_window()
             game_lose_text()
+            restart_game_window()
             quit_game()
 
         # loop constantly reads for player interaction
