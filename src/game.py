@@ -42,7 +42,7 @@ icon_big = pygame.transform.scale(icon, (80, 80))
 pygame.display.set_icon(icon)
 
 # game Win text
-win_font = pygame.font.SysFont('comicsansms', 150)
+win_font = pygame.font.SysFont('default', 150)
 
 
 def text_hollow(font, message, font_color):
@@ -99,7 +99,7 @@ def button(msg, x, y, w, h, ic, action=None):
     else:
         pygame.draw.rect(screen, ic, (x, y, w, h))
 
-    small_text = pygame.font.SysFont("comicsansms", 20)
+    small_text = pygame.font.SysFont("default", 20)
     text_surf, text_rect = text_objects(msg, small_text)
     text_rect.center = ((x + (w / 2)), (y + (h / 2)))
     screen.blit(text_surf, text_rect)
@@ -166,7 +166,7 @@ class Graph(object):
         self.positions[pos] = node
 
     def update(self, player, out):
-        level = text_outline(pygame.font.SysFont('comicsansms', 40), 'LEVEL: ' + str(current_level), colors.BLACK, colors.BLACK)
+        level = text_outline(pygame.font.SysFont('default', 40), 'LEVEL: ' + str(current_level), colors.BLACK, colors.BLACK)
         screen.blit(level, (0, 0))
         for node in self.nodes:
             # draws flooded nodes
