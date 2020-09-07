@@ -1,12 +1,14 @@
+import copy
 import math
 import random
 import sys
 import threading
 import time
-import copy
 
 import colors
 import pygame
+
+speed = 0.5
 
 # width and height of screen
 size = (1366, 768)
@@ -21,21 +23,136 @@ clock = pygame.time.Clock()
 rad = math.pi / 180
 # global variable used to ensure strong connectivity
 strong_connected = False
+# variable to ensure thread stops when program is closed
+stop_thread = False
+current_level = 1
 
 # initializing pygame library
 pygame.init()
 
 # setting screen size and background color
 screen = pygame.display.set_mode(size)
-screen.fill(colors.COLOR)
+screen.fill(colors.WHITE)
 
 # setting program name and icon
 pygame.display.set_caption("Flood Rush")
 icon = pygame.image.load('images/wave.png')
+menu = pygame.image.load('images/menu.png')
+icon_big = pygame.transform.scale(icon, (80, 80))
 pygame.display.set_icon(icon)
 
 # game Win text
-win_font = pygame.font.Font('freesansbold.ttf', 64)
+win_font = pygame.font.SysFont('default', 150)
+
+
+def text_hollow(font, message, font_color):
+    not_color = [c ^ 0xFF for c in font_color]
+    base = font.render(message, 0, font_color, not_color)
+    size = base.get_width() + 2, base.get_height() + 2
+    img = pygame.Surface(size, 16)
+    img.fill(not_color)
+    base.set_colorkey(0)
+    img.blit(base, (0, 0))
+    img.blit(base, (2, 0))
+    img.blit(base, (0, 2))
+    img.blit(base, (2, 2))
+    base.set_colorkey(0)
+    base.set_palette_at(1, not_color)
+    img.blit(base, (1, 1))
+    img.set_colorkey(not_color)
+    return img
+
+
+def text_outline(font, message, font_color, outline_color):
+    base = font.render(message, 0, font_color)
+    outline = text_hollow(font, message, outline_color)
+    img = pygame.Surface(outline.get_size(), 16)
+    img.blit(base, (1, 1))
+    img.blit(outline, (0, 0))
+    img.set_colorkey(0)
+    return img
+
+
+def game_win_text():
+    win_text = text_outline(win_font, 'YOU WIN!', colors.WHITE, colors.BLACK)
+    screen.blit(win_text, (430, 300))
+
+
+def game_lose_text():
+    win_text = text_outline(win_font, 'YOU LOSE!', colors.WHITE, colors.BLACK)
+    screen.blit(win_text, (410, 300))
+
+
+def text_objects(text, font):
+    text_surface = font.render(text, True, colors.NODE)
+    return text_surface, text_surface.get_rect()
+
+
+def button(msg, x, y, w, h, ic, action=None):
+    mouse = pygame.mouse.get_pos()
+    click = pygame.mouse.get_pressed()
+
+    if x + w > mouse[0] > x and y + h > mouse[1] > y:
+        pygame.draw.rect(screen, (ic[0]-20, ic[1]-20, ic[2]-20), (x, y, w, h))
+        if click[0] == 1 and action is not None:
+            action()
+    else:
+        pygame.draw.rect(screen, ic, (x, y, w, h))
+
+    small_text = pygame.font.SysFont("default", 20)
+    text_surf, text_rect = text_objects(msg, small_text)
+    text_rect.center = ((x + (w / 2)), (y + (h / 2)))
+    screen.blit(text_surf, text_rect)
+
+
+def menu_game_window():
+    menu_game = True
+
+    while menu_game:
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                quit_game()
+
+        screen.fill(colors.WHITE)
+        screen.blit(menu, (0, 0))
+
+        button('START', 590, 550, 200, 100, colors.BRIGHT_GREEN, game_loop)
+        pygame.display.update()
+        clock.tick(15)
+
+
+def next_level():
+    global speed, current_level
+    speed = speed - 0.1
+    current_level += 1
+    if current_level == 6:
+        current_level = "Boa sorte"
+    game_loop()
+
+
+def restart_game_window(win):
+    restart_game = True
+
+    while restart_game:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                quit_game()
+
+        button('RESTART', 510, 450, 100, 50, colors.GREEN, game_loop)
+        if win:
+            button('NEXT', 630, 450, 100, 50, colors.BLUE, next_level)
+        button('QUIT', 750, 450, 100, 50, colors.RED, quit_game)
+
+        pygame.display.update()
+        clock.tick(15)
+
+
+def quit_game():
+    global stop_thread
+    stop_thread = True
+    pygame.quit()
+    sys.exit()
 
 
 class Graph(object):
@@ -49,6 +166,8 @@ class Graph(object):
         self.positions[pos] = node
 
     def update(self, player, out):
+        level = text_outline(pygame.font.SysFont('default', 40), 'LEVEL: ' + str(current_level), colors.BLACK, colors.BLACK)
+        screen.blit(level, (0, 0))
         for node in self.nodes:
             # draws flooded nodes
             if node.flooded:
@@ -65,11 +184,7 @@ class Graph(object):
 
 
 class Node(object):
-    counter = 0
-
     def __init__(self):
-        self.id = self.__class__.counter
-        self.__class__.counter += 1
         self.rect = None
         self.color = colors.NODE
         self.neighbours = set()
@@ -299,13 +414,14 @@ def arrow(scr, lcolor, tricolor, start, end, trirad, thickness=1):
 
 # flood function, runs until all reachable nodes are flooded or program is closed
 def flood_fill(node):
+    global stop_thread
     q = [node]
     while q:
         if stop_thread:
             break
         flooded = q.pop(0)
         flooded.flooded = True
-        time.sleep(0.3)
+        time.sleep(speed)
         for neighbour in flooded.neighbours:
             if not neighbour.flooded:
                 q.append(neighbour)
@@ -315,21 +431,13 @@ def flood_fill(node):
 def min_dist(flood, player, out):
     while math.hypot(flood[0] - player.position[0], flood[1] - player.position[1]) < 300:
         player.position = random_pos()
-    while math.hypot(flood[0] - out.position[0], flood[1] - out.position[1]) < 300 or math.hypot(player.position[0] - out.position[0], player.position[1] - out.position[1]) < 300:
+    while math.hypot(flood[0] - out.position[0], flood[1] - out.position[1]) < 300 or math.hypot(
+            player.position[0] - out.position[0], player.position[1] - out.position[1]) < 300:
         out.position = random_pos()
 
 
-def game_win_text():
-    win_text = win_font.render("YOU WIN!", True, colors.BLUE)
-    screen.blit(win_text, (250, 250))
-
-
-def game_lose_text():
-    win_text = win_font.render("YOU LOSE!", True, colors.BLUE)
-    screen.blit(win_text, (250, 250))
-
-
-def main():
+def game_loop():
+    screen.fill(colors.WHITE)
     graph = create_graph()
     player = Player()
     out = Exit()
@@ -349,14 +457,23 @@ def main():
     # main game loop will run as long as the user doesn't exit the program
     # all player interaction should be handled within this loop
     while True:
+
         graph.update(player, out)
+
+        if player.position == out.position:
+            game_win_text()
+            restart_game_window(True)
+            quit_game()
+        elif graph.positions[player.position].flooded or graph.positions[out.position].flooded:
+            game_lose_text()
+            restart_game_window(False)
+            quit_game()
+
         # loop constantly reads for player interaction
         for event in pygame.event.get():
             # if the player presses the x button
             if event.type == pygame.QUIT:
-                stop_thread = True
-                pygame.quit()
-                sys.exit()
+                quit_game()
             # if the player presses any key
             if event.type == pygame.KEYDOWN:
                 (x, y) = player.position
@@ -376,17 +493,16 @@ def main():
                     if (x + spacing, y) in graph.positions:
                         if graph.positions[x + spacing, y] in graph.positions[x, y].neighbours:
                             player.position = x + spacing, y
-            if player.position == out.position:
-                game_win_text()
-                stop_thread = True
-            elif graph.positions[player.position].flooded or graph.positions[out.position].flooded:
-                game_lose_text()
-                stop_thread = True
 
         # update the display to present changes on screen
         pygame.display.update()
         # clock is currently 60 frames per second
         clock.tick(60)
+
+
+def main():
+    menu_game_window()
+    game_loop()
 
 
 if __name__ == "__main__":
