@@ -49,7 +49,7 @@ python3 src/game.py
 ## Uso 
 
 ### Vídeo explicativo
-![Video](https://github.com/projeto-de-algoritmos/Grafos1_Flood/blob/master/video_explicacao.mp4)
+[Video](https://github.com/projeto-de-algoritmos/Grafos1_Flood/blob/master/video_explicacao.mp4)
 
 * Player - verde.
 * Saída - vermelho.
