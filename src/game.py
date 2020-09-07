@@ -8,8 +8,10 @@ import time
 import colors
 import pygame
 
+SPEED = 0.5
+
 # width and height of screen
-size = (800, 600)
+size = (1366, 768)
 # space between nodes
 spacing = 80
 # compute x and y offset to avoid nodes spawning offscreen
@@ -44,12 +46,12 @@ win_font = pygame.font.SysFont('comicsansms', 64)
 
 def game_win_text():
     win_text = win_font.render("YOU WIN!", True, colors.BLUE)
-    screen.blit(win_text, (250, 250))
+    screen.blit(win_text, (530, 250))
 
 
 def game_lose_text():
     win_text = win_font.render("YOU LOSE!", True, colors.EXIT)
-    screen.blit(win_text, (250, 250))
+    screen.blit(win_text, (530, 250))
 
 
 def text_objects(text, font):
@@ -60,9 +62,9 @@ def text_objects(text, font):
 def button(msg, x, y, w, h, ic, action=None):
     mouse = pygame.mouse.get_pos()
     click = pygame.mouse.get_pressed()
-    # print(click)
-    if x + w > mouse[0] > x and y + h > mouse[1] > y:
 
+    if x + w > mouse[0] > x and y + h > mouse[1] > y:
+        pygame.draw.rect(screen, colors.GREEN, (x, y, w, h))
         if click[0] == 1 and action is not None:
             action()
     else:
@@ -88,7 +90,7 @@ def menu_game_window():
 
         # screen.fill(colors.WHITE)
 
-        button('START', 350, 450, 100, 50, colors.BRIGHT_GREEN, game_loop)
+        button('START', 590, 550, 200, 100, colors.BRIGHT_GREEN, game_loop)
         pygame.display.update()
         clock.tick(15)
 
@@ -101,8 +103,11 @@ def restart_game_window():
             if event.type == pygame.QUIT:
                 quit_game()
 
-        button('RESTART', 250, 450, 100, 50, colors.GREEN, game_loop)
-        button('QUIT', 450, 450, 100, 50, colors.EXIT, quit_game)
+        pygame.draw.rect(screen, colors.WHITE, (510, 200, 400, 200))
+
+        button('RESTART', 530, 450, 100, 50, colors.GREEN, game_loop)
+        # button('NEXT', 530, 450, 100, 50, colors.BLUE, next_level)
+        button('QUIT', 730, 450, 100, 50, colors.EXIT, quit_game)
 
         pygame.display.update()
         clock.tick(15)
@@ -383,7 +388,7 @@ def flood_fill(node):
             break
         flooded = q.pop(0)
         flooded.flooded = True
-        time.sleep(0.3)
+        time.sleep(SPEED)
         for neighbour in flooded.neighbours:
             if not neighbour.flooded:
                 q.append(neighbour)
@@ -423,12 +428,12 @@ def game_loop():
         graph.update(player, out)
 
         if player.position == out.position:
-            game_win_text()
             restart_game_window()
+            game_win_text()
             quit_game()
         elif graph.positions[player.position].flooded or graph.positions[out.position].flooded:
-            game_lose_text()
             restart_game_window()
+            game_lose_text()
             quit_game()
 
         # loop constantly reads for player interaction
