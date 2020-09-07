@@ -8,7 +8,7 @@ import time
 import colors
 import pygame
 
-SPEED = 0.5
+speed = 0.5
 
 # width and height of screen
 size = (1366, 768)
@@ -121,7 +121,13 @@ def menu_game_window():
         clock.tick(15)
 
 
-def restart_game_window():
+def next_level():
+    global speed
+    speed = speed - 0.1
+    game_loop()
+
+
+def restart_game_window(win):
     restart_game = True
 
     while restart_game:
@@ -130,7 +136,8 @@ def restart_game_window():
                 quit_game()
 
         button('RESTART', 530, 450, 100, 50, colors.GREEN, game_loop)
-        # button('NEXT', 530, 450, 100, 50, colors.BLUE, next_level)
+        if win:
+            button('NEXT', 630, 450, 100, 50, colors.BLUE, next_level)
         button('QUIT', 730, 450, 100, 50, colors.EXIT, quit_game)
 
         pygame.display.update()
@@ -412,7 +419,7 @@ def flood_fill(node):
             break
         flooded = q.pop(0)
         flooded.flooded = True
-        time.sleep(SPEED)
+        time.sleep(speed)
         for neighbour in flooded.neighbours:
             if not neighbour.flooded:
                 q.append(neighbour)
@@ -453,11 +460,11 @@ def game_loop():
 
         if player.position == out.position:
             game_win_text()
-            restart_game_window()
+            restart_game_window(True)
             quit_game()
         elif graph.positions[player.position].flooded or graph.positions[out.position].flooded:
             game_lose_text()
-            restart_game_window()
+            restart_game_window(False)
             quit_game()
 
         # loop constantly reads for player interaction
