@@ -25,6 +25,7 @@ rad = math.pi / 180
 strong_connected = False
 # variable to ensure thread stops when program is closed
 stop_thread = False
+current_level = 1
 
 # initializing pygame library
 pygame.init()
@@ -92,7 +93,7 @@ def button(msg, x, y, w, h, ic, action=None):
     click = pygame.mouse.get_pressed()
 
     if x + w > mouse[0] > x and y + h > mouse[1] > y:
-        pygame.draw.rect(screen, colors.GREEN, (x, y, w, h))
+        pygame.draw.rect(screen, (ic[0]-20, ic[1]-20, ic[2]-20), (x, y, w, h))
         if click[0] == 1 and action is not None:
             action()
     else:
@@ -122,8 +123,11 @@ def menu_game_window():
 
 
 def next_level():
-    global speed
+    global speed, current_level
     speed = speed - 0.1
+    current_level += 1
+    if current_level == 6:
+        current_level = "Boa sorte"
     game_loop()
 
 
@@ -135,10 +139,10 @@ def restart_game_window(win):
             if event.type == pygame.QUIT:
                 quit_game()
 
-        button('RESTART', 530, 450, 100, 50, colors.GREEN, game_loop)
+        button('RESTART', 510, 450, 100, 50, colors.GREEN, game_loop)
         if win:
             button('NEXT', 630, 450, 100, 50, colors.BLUE, next_level)
-        button('QUIT', 730, 450, 100, 50, colors.EXIT, quit_game)
+        button('QUIT', 750, 450, 100, 50, colors.RED, quit_game)
 
         pygame.display.update()
         clock.tick(15)
@@ -162,6 +166,8 @@ class Graph(object):
         self.positions[pos] = node
 
     def update(self, player, out):
+        level = text_outline(pygame.font.SysFont('comicsansms', 40), 'LEVEL: ' + str(current_level), colors.BLACK, colors.BLACK)
+        screen.blit(level, (0, 0))
         for node in self.nodes:
             # draws flooded nodes
             if node.flooded:
@@ -178,11 +184,7 @@ class Graph(object):
 
 
 class Node(object):
-    counter = 0
-
     def __init__(self):
-        self.id = self.__class__.counter
-        self.__class__.counter += 1
         self.rect = None
         self.color = colors.NODE
         self.neighbours = set()
