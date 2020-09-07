@@ -15,7 +15,17 @@ objetivo do jogador é encontrar a saída antes que a
 inundação o alcance.
 
 ## Screenshots
-Adicione 3 ou mais screenshots do projeto em funcionamento.
+* Menu:
+
+![print_menu](src/images/menu_print.png)
+
+* Jogo em funcionamento + tela de derrota:
+
+![lose](src/images/lose.gif)
+
+* Tela de vitória:
+
+![print_menu](src/images/win_screen.png)
 
 ## Instalação 
 **Linguagem**: Python<br>
@@ -40,15 +50,16 @@ python3 src/game.py
 * Player - verde.
 * Saída - vermelho.
 * Enchente - azul.
-* Click com o botão esquerdo do mouse em *Start* 
+
+* Clique com o botão esquerdo do mouse em *Start*
 * Controle o player com ←, ↑, →,  ↓ do teclado.
-* Encontre a saída antes que enchente alcance o player ou a saída.
-* Click em *Restart* para jogar novamente.
-* Click em *Next* para o próximo nível
-* Click em *Quit* para encerrar o jogo.
+* Encontre a saída antes que a enchente alcance o player ou a saída.
+* Clique em *Restart* para jogar novamente.
+* Clique em *Next* para o próximo nível em caso de vitória.
+* Clique em *Quit* para encerrar o jogo.
 
 ## Outros 
-O jogo possui 7 níveis de dificuldade. 
+O jogo possui 7 níveis crescentes de dificuldade. 
 
 
 
