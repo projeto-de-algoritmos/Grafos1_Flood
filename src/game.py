@@ -8,43 +8,33 @@ import time
 import colors
 import pygame
 
-speed = 0.5
-
-# width and height of screen
 size = (1366, 768)
-# space between nodes
 spacing = 80
-# compute x and y offset to avoid nodes spawning offscreen
 starting_x = abs((((size[0] - 20) // spacing) * spacing) - size[0]) / 2
 starting_y = abs((((size[1] - 20) // spacing) * spacing) - size[1]) / 2
-# clock dictates how fast the screen is refreshed
 clock = pygame.time.Clock()
-# constant for arrow function
+
 rad = math.pi / 180
-# global variable used to ensure strong connectivity
 strong_connected = False
-# variable to ensure thread stops when program is closed
 stop_thread = False
 current_level = 1
+speed = 0.5
 
-# initializing pygame library
 pygame.init()
 
-# setting screen size and background color
 screen = pygame.display.set_mode(size)
 screen.fill(colors.WHITE)
 
-# setting program name and icon
 pygame.display.set_caption("Flood Rush")
 icon = pygame.image.load('src/images/wave.png')
 menu = pygame.image.load('src/images/menu.png')
 icon_big = pygame.transform.scale(icon, (80, 80))
 pygame.display.set_icon(icon)
 
-# game Win text
 win_font = pygame.font.SysFont('default', 150)
 
 
+# auxiliary function for drawing text
 def text_hollow(font, message, font_color):
     not_color = [c ^ 0xFF for c in font_color]
     base = font.render(message, 0, font_color, not_color)
@@ -63,6 +53,7 @@ def text_hollow(font, message, font_color):
     return img
 
 
+# auxiliary function for drawing text
 def text_outline(font, message, font_color, outline_color):
     base = font.render(message, 0, font_color)
     outline = text_hollow(font, message, outline_color)
@@ -88,6 +79,7 @@ def text_objects(text, font):
     return text_surface, text_surface.get_rect()
 
 
+# creates a button
 def button(msg, x, y, w, h, ic, action=None):
     mouse = pygame.mouse.get_pos()
     click = pygame.mouse.get_pressed()
@@ -122,18 +114,6 @@ def menu_game_window():
         clock.tick(15)
 
 
-def next_level():
-    global speed, current_level
-    speed = speed - 0.1
-    current_level += 1
-    if current_level == 6:
-        speed = 0.05
-    elif current_level == 7:
-        current_level = "Boa sorte"
-        speed = 0
-    game_loop()
-
-
 def restart_game_window(win):
     restart_game = True
 
@@ -158,6 +138,20 @@ def quit_game():
     sys.exit()
 
 
+# increase difficulty
+def next_level():
+    global speed, current_level
+    speed = speed - 0.1
+    current_level += 1
+    if current_level == 6:
+        speed = 0.05
+    elif current_level == 7:
+        current_level = "Boa sorte"
+        speed = 0
+    game_loop()
+
+
+# stores nodes and positions
 class Graph(object):
     def __init__(self):
         self.nodes = set()
@@ -165,23 +159,18 @@ class Graph(object):
 
     def add_nodes(self, node, pos):
         self.nodes.add(node)
-        # relate each node to it's position, used later for edge generation
         self.positions[pos] = node
 
     def update(self, player, out):
         level = text_outline(pygame.font.SysFont('default', 40), 'LEVEL: ' + str(current_level), colors.BLACK, colors.BLACK)
         screen.blit(level, (0, 0))
         for node in self.nodes:
-            # draws flooded nodes
             if node.flooded:
                 draw_circle(node, colors.FLOODED)
-            # draws player node
             elif player.position == (node.rect[0], node.rect[1]):
                 draw_circle(node, colors.PLAYER)
-            # draws exit node
             elif out.position == (node.rect[0], node.rect[1]):
                 draw_circle(node, colors.EXIT)
-            # draws regular nodes
             else:
                 draw_circle(node, colors.NODE)
 
@@ -207,26 +196,16 @@ class Exit(object):
         self.position = random_pos()
 
 
+# generates graph with random edges
 def create_graph():
     pos = [starting_x, starting_y]
     graph = Graph()
     nodes = []
-    # loop runs until bottom right corner of screen is reached
-    # in pygame any given position within the screen is dictated by it's x, y coordinates
-    # x and y both starts at 0 on the top left corner
-    # x increases as you go right, y increases as you go down
-    # meaning bottom right of the screen == screen size (screen variable)
     while pos[1] <= size[1] - starting_y:
         node = Node()
-        # saves node + position on graph
         graph.add_nodes(node, (pos[0], pos[1]))
         nodes.append(node)
-        # creates a Rect pygame object for each node
-        # first two variables refers to object coordinates, last two refers to object size
-        # this means that pygame actually sees each node as a 20 by 20 pixel square
-        # they appear as circles because they are drawn as such on update() function
         node.rect = pygame.Rect(pos[0], pos[1], 20, 20)
-        # guarantees there will be no nodes generating off screen
         if pos[0] == size[0] - starting_x:
             pos[0] = starting_x
             pos[1] += spacing
@@ -234,24 +213,16 @@ def create_graph():
         pos[0] += spacing
 
     pos = [starting_x, starting_y]
-    # loop to generate edges
     for node in nodes:
-        # guarantees it won't go offscreen
         if pos[1] > size[1] - starting_y:
             break
         if pos[0] > size[0] - starting_x:
             pos[0] = starting_x
             pos[1] += spacing
 
-            # following four if's verifies if there is a neighbouring node to the left, right, up and down respectively
-            # for each given node
         if pos[0] - spacing > 0:
-            # for example, if there is a neighbouring node to the left, it has a 50% chance of generating an edge
-            # between the node and it's neighbour
             if random.randint(0, 1):
-                # assigns neighbour node to variable neighbour
                 neighbour = graph.positions[pos[0] - spacing, pos[1]]
-                # add neighbour to node's list of neighbours
                 node.neighbours.add(neighbour)
         if pos[0] + spacing < size[0]:
             if random.randint(0, 1):
@@ -280,7 +251,6 @@ def strongly_connect(graph, rev_graph, start_pos):
 
     update_strong_component(graph, rev_graph)
 
-    # checks if the whole graph is strongly connected, returns if true
     for node in graph.nodes:
         if not node.strong:
             strong_connected = False
@@ -398,7 +368,6 @@ def random_pos():
             random.randrange(starting_y, (((size[1] - 20) // spacing) * spacing), spacing))
 
 
-# draws circle on screen
 def draw_circle(node, color):
     return pygame.draw.circle(screen, color, node.rect.center, 10)
 
@@ -439,6 +408,7 @@ def min_dist(flood, player, out):
         out.position = random_pos()
 
 
+# main game loop where player input is read
 def game_loop():
     screen.fill(colors.WHITE)
     graph = create_graph()
@@ -457,8 +427,6 @@ def game_loop():
     x = threading.Thread(target=flood_fill, args=(flood_node,))
     x.start()
 
-    # main game loop will run as long as the user doesn't exit the program
-    # all player interaction should be handled within this loop
     while True:
 
         graph.update(player, out)
@@ -472,12 +440,9 @@ def game_loop():
             restart_game_window(False)
             quit_game()
 
-        # loop constantly reads for player interaction
         for event in pygame.event.get():
-            # if the player presses the x button
             if event.type == pygame.QUIT:
                 quit_game()
-            # if the player presses any key
             if event.type == pygame.KEYDOWN:
                 (x, y) = player.position
                 if event.key == pygame.K_UP:
@@ -497,9 +462,7 @@ def game_loop():
                         if graph.positions[x + spacing, y] in graph.positions[x, y].neighbours:
                             player.position = x + spacing, y
 
-        # update the display to present changes on screen
         pygame.display.update()
-        # clock is currently 60 frames per second
         clock.tick(60)
 
 
