@@ -21,6 +21,8 @@ clock = pygame.time.Clock()
 rad = math.pi / 180
 # global variable used to ensure strong connectivity
 strong_connected = False
+# variable to ensure thread stops when program is closed
+stop_thread = False
 
 # initializing pygame library
 pygame.init()
@@ -51,8 +53,8 @@ def game_lose_text():
 
 
 def text_objects(text, font):
-    textSurface = font.render(text, True, colors.NODE)
-    return textSurface, textSurface.get_rect()
+    text_surface = font.render(text, True, colors.NODE)
+    return text_surface, text_surface.get_rect()
 
 
 def button(msg, x, y, w, h, ic, action=None):
@@ -66,10 +68,10 @@ def button(msg, x, y, w, h, ic, action=None):
     else:
         pygame.draw.rect(screen, ic, (x, y, w, h))
 
-    smallText = pygame.font.SysFont("comicsansms", 20)
-    textSurf, textRect = text_objects(msg, smallText)
-    textRect.center = ((x + (w / 2)), (y + (h / 2)))
-    screen.blit(textSurf, textRect)
+    small_text = pygame.font.SysFont("comicsansms", 20)
+    text_surf, text_rect = text_objects(msg, small_text)
+    text_rect.center = ((x + (w / 2)), (y + (h / 2)))
+    screen.blit(text_surf, text_rect)
 
 
 def menu_game_window():
@@ -79,8 +81,7 @@ def menu_game_window():
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                pygame.quit()
-                quit()
+                quit_game()
 
         screen.fill(colors.WHITE)
         screen.blit(menu, (0, 0))
@@ -98,19 +99,20 @@ def restart_game_window():
     while restart_game:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                pygame.quit()
-                quit()
+                quit_game()
 
         button('RESTART', 250, 450, 100, 50, colors.GREEN, game_loop)
-        button('QUIT', 450, 450, 100, 50, colors.EXIT, quitgame)
+        button('QUIT', 450, 450, 100, 50, colors.EXIT, quit_game)
 
         pygame.display.update()
         clock.tick(15)
 
 
-def quitgame():
+def quit_game():
+    global stop_thread
+    stop_thread = True
     pygame.quit()
-    quit()
+    sys.exit()
 
 
 class Graph(object):
@@ -374,6 +376,7 @@ def arrow(scr, lcolor, tricolor, start, end, trirad, thickness=1):
 
 # flood function, runs until all reachable nodes are flooded or program is closed
 def flood_fill(node):
+    global stop_thread
     q = [node]
     while q:
         if stop_thread:
@@ -417,13 +420,21 @@ def game_loop():
     while True:
 
         graph.update(player, out)
+
+        if player.position == out.position:
+            game_win_text()
+            restart_game_window()
+            quit_game()
+        elif graph.positions[player.position].flooded or graph.positions[out.position].flooded:
+            game_lose_text()
+            restart_game_window()
+            quit_game()
+
         # loop constantly reads for player interaction
         for event in pygame.event.get():
             # if the player presses the x button
             if event.type == pygame.QUIT:
-                stop_thread = True
-                pygame.quit()
-                sys.exit()
+                quit_game()
             # if the player presses any key
             if event.type == pygame.KEYDOWN:
                 (x, y) = player.position
@@ -443,14 +454,6 @@ def game_loop():
                     if (x + spacing, y) in graph.positions:
                         if graph.positions[x + spacing, y] in graph.positions[x, y].neighbours:
                             player.position = x + spacing, y
-            if player.position == out.position:
-                game_win_text()
-                restart_game_window()
-                stop_thread = True
-            elif graph.positions[player.position].flooded or graph.positions[out.position].flooded:
-                game_lose_text()
-                restart_game_window()
-                stop_thread = True
 
         # update the display to present changes on screen
         pygame.display.update()
