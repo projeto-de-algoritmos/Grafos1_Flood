@@ -36,8 +36,8 @@ screen.fill(colors.WHITE)
 
 # setting program name and icon
 pygame.display.set_caption("Flood Rush")
-icon = pygame.image.load('images/wave.png')
-menu = pygame.image.load('images/menu.png')
+icon = pygame.image.load('src/images/wave.png')
+menu = pygame.image.load('src/images/menu.png')
 icon_big = pygame.transform.scale(icon, (80, 80))
 pygame.display.set_icon(icon)
 
