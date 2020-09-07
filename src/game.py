@@ -399,6 +399,7 @@ def min_dist(flood, player, out):
 
 
 def game_loop():
+    screen.fill(colors.WHITE)
     graph = create_graph()
     player = Player()
     out = Exit()
