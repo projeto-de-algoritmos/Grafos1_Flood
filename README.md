@@ -47,6 +47,9 @@ python3 src/game.py
 ```
 
 ## Uso 
+
+### Vídeo explicativo
+
 * Player - verde.
 * Saída - vermelho.
 * Enchente - azul.
@@ -59,7 +62,8 @@ python3 src/game.py
 * Clique em *Quit* para encerrar o jogo.
 
 ## Outros 
-O jogo possui 7 níveis crescentes de dificuldade. 
+O jogo possui 7 níveis crescentes de dificuldade.
+O grafo gerado a cada fase é aleatório e sempre será fortemente conectado.
 
 
 
