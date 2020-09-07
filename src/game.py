@@ -19,6 +19,7 @@ starting_y = abs((((size[1] - 20) // spacing) * spacing) - size[1]) / 2
 clock = pygame.time.Clock()
 # constant for arrow function
 rad = math.pi / 180
+# global variable used to ensure strong connectivity
 strong_connected = False
 
 # initializing pygame library
@@ -60,7 +61,7 @@ def button(msg, x, y, w, h, ic, action=None):
     # print(click)
     if x + w > mouse[0] > x and y + h > mouse[1] > y:
 
-        if click[0] == 1 and action != None:
+        if click[0] == 1 and action is not None:
             action()
     else:
         pygame.draw.rect(screen, ic, (x, y, w, h))
@@ -71,7 +72,7 @@ def button(msg, x, y, w, h, ic, action=None):
     screen.blit(textSurf, textRect)
 
 
-def menuGameWindow():
+def menu_game_window():
     menu_game = True
 
     while menu_game:
@@ -91,7 +92,7 @@ def menuGameWindow():
         clock.tick(15)
 
 
-def restartGameWindow():
+def restart_game_window():
     restart_game = True
 
     while restart_game:
@@ -127,13 +128,13 @@ class Graph(object):
             # draws flooded nodes
             if node.flooded:
                 draw_circle(node, colors.FLOODED)
-            # draws player node on screen
+            # draws player node
             elif player.position == (node.rect[0], node.rect[1]):
                 draw_circle(node, colors.PLAYER)
             # draws exit node
             elif out.position == (node.rect[0], node.rect[1]):
                 draw_circle(node, colors.EXIT)
-            # draws regular nodes on screen
+            # draws regular nodes
             else:
                 draw_circle(node, colors.NODE)
 
@@ -171,7 +172,7 @@ def create_graph():
     # in pygame any given position within the screen is dictated by it's x, y coordinates
     # x and y both starts at 0 on the top left corner
     # x increases as you go right, y increases as you go down
-    # meaning bottom right of the screen == screen size (dictated by screen variable)
+    # meaning bottom right of the screen == screen size (screen variable)
     while pos[1] <= size[1] - starting_y:
         node = Node()
         # saves node + position on graph
@@ -180,9 +181,9 @@ def create_graph():
         # creates a Rect pygame object for each node
         # first two variables refers to object coordinates, last two refers to object size
         # this means that pygame actually sees each node as a 20 by 20 pixel square
-        # they appear as cricles because they are drawn as such on update() function
+        # they appear as circles because they are drawn as such on update() function
         node.rect = pygame.Rect(pos[0], pos[1], 20, 20)
-        # guarantees there will be no nodes generating off screen to the right
+        # guarantees there will be no nodes generating off screen
         if pos[0] == size[0] - starting_x:
             pos[0] = starting_x
             pos[1] += spacing
@@ -227,6 +228,35 @@ def create_graph():
     return graph
 
 
+# main function to ensure strong connectivity
+def strongly_connect(graph, rev_graph, start_pos):
+    global strong_connected
+
+    bfs(graph.positions[start_pos])
+    bfs(rev_graph.positions[start_pos])
+
+    update_strong_component(graph, rev_graph)
+
+    # checks if the whole graph is strongly connected, returns if true
+    for node in graph.nodes:
+        if not node.strong:
+            strong_connected = False
+            break
+        strong_connected = True
+
+    if strong_connected:
+        return
+
+    fix_connectivity(graph, rev_graph)
+
+    for node in graph.nodes:
+        node.strong = False
+        rev_graph.positions[node.rect[0], node.rect[1]].strong = False
+
+    strongly_connect(graph, rev_graph, start_pos)
+
+
+# reverse all edges of given graph
 def reverse_graph(graph):
     rev_graph = copy.deepcopy(graph)
     for node in rev_graph.nodes:
@@ -238,6 +268,7 @@ def reverse_graph(graph):
     return rev_graph
 
 
+# update nodes marked as strongly connected
 def update_strong_component(graph, rev_graph):
     for node in graph.nodes:
         if node.strong and rev_graph.positions[node.rect[0], node.rect[1]].strong:
@@ -246,6 +277,7 @@ def update_strong_component(graph, rev_graph):
             node.strong = False
 
 
+# fixes connectivity by generating edges between strongly connected component and other nodes
 def fix_connectivity(graph, rev_graph):
     for node in graph.nodes:
         if not node.strong:
@@ -287,6 +319,19 @@ def fix_connectivity(graph, rev_graph):
                     return
 
 
+def bfs(node):
+    node.strong = True
+    queue = [node]
+
+    while queue:
+        s = queue.pop(0)
+
+        for neighbour in s.neighbours:
+            if not neighbour.strong:
+                neighbour.strong = True
+                queue.append(neighbour)
+
+
 def draw_edges(graph):
     for node in graph.nodes:
         for neighbour in node.neighbours:
@@ -302,45 +347,6 @@ def draw_edges(graph):
             elif node.rect[1] > neighbour.rect[1]:
                 arrow(screen, colors.NODE, colors.NODE, node.rect.center, (neighbour.rect.center[0],
                                                                            neighbour.rect.center[1] + 15), 5)
-
-
-def strongly_connect(graph, rev_graph, start_pos):
-    global strong_connected
-
-    bfs(graph.positions[start_pos])
-    bfs(rev_graph.positions[start_pos])
-
-    update_strong_component(graph, rev_graph)
-
-    for node in graph.nodes:
-        if not node.strong:
-            strong_connected = False
-            break
-        strong_connected = True
-
-    if strong_connected:
-        return
-
-    fix_connectivity(graph, rev_graph)
-
-    for node in graph.nodes:
-        node.strong = False
-        rev_graph.positions[node.rect[0], node.rect[1]].strong = False
-
-    strongly_connect(graph, rev_graph, start_pos)
-
-
-def bfs(node):
-    node.strong = True
-    queue = [node]
-
-    while queue:
-        s = queue.pop(0)
-
-        for neighbour in s.neighbours:
-            if not neighbour.strong:
-                neighbour.strong = True
-                queue.append(neighbour)
 
 
 # returns random position
@@ -374,10 +380,19 @@ def flood_fill(node):
             break
         flooded = q.pop(0)
         flooded.flooded = True
-        time.sleep(1)
+        time.sleep(0.3)
         for neighbour in flooded.neighbours:
             if not neighbour.flooded:
                 q.append(neighbour)
+
+
+# ensures minimum distance between starting nodes
+def min_dist(flood, player, out):
+    while math.hypot(flood[0] - player.position[0], flood[1] - player.position[1]) < 300:
+        player.position = random_pos()
+    while math.hypot(flood[0] - out.position[0], flood[1] - out.position[1]) < 300 or math.hypot(
+            player.position[0] - out.position[0], player.position[1] - out.position[1]) < 300:
+        out.position = random_pos()
 
 
 def game_loop():
@@ -389,6 +404,7 @@ def game_loop():
     draw_edges(graph)
 
     flood_pos = random_pos()
+    min_dist(flood_pos, player, out)
     flood_node = graph.positions[flood_pos[0], flood_pos[1]]
 
     global stop_thread
@@ -429,11 +445,11 @@ def game_loop():
                             player.position = x + spacing, y
             if player.position == out.position:
                 game_win_text()
-                restartGameWindow()
+                restart_game_window()
                 stop_thread = True
             elif graph.positions[player.position].flooded or graph.positions[out.position].flooded:
                 game_lose_text()
-                restartGameWindow()
+                restart_game_window()
                 stop_thread = True
 
         # update the display to present changes on screen
@@ -443,7 +459,7 @@ def game_loop():
 
 
 def main():
-    menuGameWindow()
+    menu_game_window()
     game_loop()
 
 
