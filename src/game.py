@@ -19,6 +19,7 @@ starting_y = abs((((size[1] - 20) // spacing) * spacing) - size[1]) / 2
 clock = pygame.time.Clock()
 # constant for arrow function
 rad = math.pi / 180
+strong_connected = False
 
 # initializing pygame library
 pygame.init()
@@ -64,7 +65,7 @@ class Graph(object):
             # draws player node on screen
             elif player.position == (node.rect[0], node.rect[1]):
                 draw_circle(node, colors.PLAYER)
-                # draws exit node
+            # draws exit node
             elif out.position == (node.rect[0], node.rect[1]):
                 draw_circle(node, colors.EXIT)
             # draws regular nodes on screen
@@ -82,6 +83,7 @@ class Node(object):
         self.color = colors.NODE
         self.neighbours = set()
         self.flooded = False
+        self.strong = False
 
 
 class Player(object):
@@ -125,7 +127,6 @@ def create_graph():
     pos = [starting_x, starting_y]
     # loop to generate edges
     for node in nodes:
-        alone = True
         # guarantees it won't go offscreen
         if pos[1] > size[1] - starting_y:
             break
@@ -133,42 +134,28 @@ def create_graph():
             pos[0] = starting_x
             pos[1] += spacing
 
-        while alone:
             # following four if's verifies if there is a neighbouring node to the left, right, up and down respectively
             # for each given node
-            if pos[0] - spacing > 0:
-                # for example, if there is a neighbouring node to the left, it has a 50% chance of generating an edge
-                # between the node and it's neighbour
-                if random.randint(0, 2):
-                    # assigns neighbour node to variable neighbour
-                    neighbour = graph.positions[pos[0] - spacing, pos[1]]
-                    # add neighbour to node's list of neighbours
-                    node.neighbours.add(neighbour)
-                    # draws arrow/edge from node to neighbour
-                    arrow(screen, colors.NODE, colors.NODE, node.rect.center, (neighbour.rect.center[0] + 15,
-                                                                               neighbour.rect.center[1]), 5)
-                    alone = False
-            if pos[0] + spacing < size[0]:
-                if random.randint(0, 2):
-                    neighbour = graph.positions[pos[0] + spacing, pos[1]]
-                    node.neighbours.add(neighbour)
-                    arrow(screen, colors.NODE, colors.NODE, node.rect.center, (neighbour.rect.center[0] - 15,
-                                                                               neighbour.rect.center[1]), 5)
-                    alone = False
-            if pos[1] - spacing > 0:
-                if random.randint(0, 2):
-                    neighbour = graph.positions[pos[0], pos[1] - spacing]
-                    node.neighbours.add(neighbour)
-                    arrow(screen, colors.NODE, colors.NODE, node.rect.center, (neighbour.rect.center[0],
-                                                                               neighbour.rect.center[1] + 15), 5)
-                    alone = False
-            if pos[1] + spacing < size[1]:
-                if random.randint(0, 2):
-                    neighbour = graph.positions[pos[0], pos[1] + spacing]
-                    node.neighbours.add(neighbour)
-                    arrow(screen, colors.NODE, colors.NODE, node.rect.center, (neighbour.rect.center[0],
-                                                                               neighbour.rect.center[1] - 15), 5)
-                    alone = False
+        if pos[0] - spacing > 0:
+            # for example, if there is a neighbouring node to the left, it has a 50% chance of generating an edge
+            # between the node and it's neighbour
+            if random.randint(0, 1):
+                # assigns neighbour node to variable neighbour
+                neighbour = graph.positions[pos[0] - spacing, pos[1]]
+                # add neighbour to node's list of neighbours
+                node.neighbours.add(neighbour)
+        if pos[0] + spacing < size[0]:
+            if random.randint(0, 1):
+                neighbour = graph.positions[pos[0] + spacing, pos[1]]
+                node.neighbours.add(neighbour)
+        if pos[1] - spacing > 0:
+            if random.randint(0, 1):
+                neighbour = graph.positions[pos[0], pos[1] - spacing]
+                node.neighbours.add(neighbour)
+        if pos[1] + spacing < size[1]:
+            if random.randint(0, 1):
+                neighbour = graph.positions[pos[0], pos[1] + spacing]
+                node.neighbours.add(neighbour)
 
         pos[0] += spacing
 
@@ -181,25 +168,113 @@ def reverse_graph(graph):
         node.neighbours.clear()
     for node in graph.nodes:
         for neighbour in node.neighbours:
-            rev_graph.positions[neighbour.rect[0], neighbour.rect[1]].neighbours.add(node)
+            rev_graph.positions[neighbour.rect[0], neighbour.rect[1]].neighbours.add(rev_graph.positions[node.rect[0],
+                                                                                                         node.rect[1]])
     return rev_graph
 
 
-def strongly_connect(graph, start_pos):
-    start_node = graph.positions[start_pos]
-    rev_graph = reverse_graph(graph)
+def update_strong_component(graph, rev_graph):
+    for node in graph.nodes:
+        if node.strong and rev_graph.positions[node.rect[0], node.rect[1]].strong:
+            continue
+        else:
+            node.strong = False
 
 
-def bfs(graph, node):
-    node.flooded = True
+def fix_connectivity(graph, rev_graph):
+    for node in graph.nodes:
+        if not node.strong:
+            if node.rect[0] - spacing > 0:
+                if graph.positions[node.rect[0] - spacing, node.rect[1]].strong:
+                    node.neighbours.add(graph.positions[node.rect[0] - spacing, node.rect[1]])
+                    graph.positions[node.rect[0] - spacing, node.rect[1]].neighbours.add(node)
+                    rev_graph.positions[node.rect[0], node.rect[1]].neighbours.add(
+                        rev_graph.positions[node.rect[0] - spacing, node.rect[1]])
+                    rev_graph.positions[node.rect[0] - spacing, node.rect[1]].neighbours.add(
+                        rev_graph.positions[node.rect[0], node.rect[1]])
+                    return
+            if node.rect[0] + spacing < size[0]:
+                if graph.positions[node.rect[0] + spacing, node.rect[1]].strong:
+                    node.neighbours.add(graph.positions[node.rect[0] + spacing, node.rect[1]])
+                    graph.positions[node.rect[0] + spacing, node.rect[1]].neighbours.add(node)
+                    rev_graph.positions[node.rect[0], node.rect[1]].neighbours.add(
+                        rev_graph.positions[node.rect[0] + spacing, node.rect[1]])
+                    rev_graph.positions[node.rect[0] + spacing, node.rect[1]].neighbours.add(
+                        rev_graph.positions[node.rect[0], node.rect[1]])
+                    return
+            if node.rect[1] - spacing > 0:
+                if graph.positions[node.rect[0], node.rect[1] - spacing].strong:
+                    node.neighbours.add(graph.positions[node.rect[0], node.rect[1] - spacing])
+                    graph.positions[node.rect[0], node.rect[1] - spacing].neighbours.add(node)
+                    rev_graph.positions[node.rect[0], node.rect[1]].neighbours.add(
+                        rev_graph.positions[node.rect[0], node.rect[1] - spacing])
+                    rev_graph.positions[node.rect[0], node.rect[1] - spacing].neighbours.add(
+                        rev_graph.positions[node.rect[0], node.rect[1]])
+                    return
+            if node.rect[1] + spacing < size[1]:
+                if graph.positions[node.rect[0], node.rect[1] + spacing].strong:
+                    node.neighbours.add(graph.positions[node.rect[0], node.rect[1] + spacing])
+                    graph.positions[node.rect[0], node.rect[1] + spacing].neighbours.add(node)
+                    rev_graph.positions[node.rect[0], node.rect[1]].neighbours.add(
+                        rev_graph.positions[node.rect[0], node.rect[1] + spacing])
+                    rev_graph.positions[node.rect[0], node.rect[1] + spacing].neighbours.add(
+                        rev_graph.positions[node.rect[0], node.rect[1]])
+                    return
+
+
+def draw_edges(graph):
+    for node in graph.nodes:
+        for neighbour in node.neighbours:
+            if node.rect[0] > neighbour.rect[0]:
+                arrow(screen, colors.NODE, colors.NODE, node.rect.center, (neighbour.rect.center[0] + 15,
+                                                                           neighbour.rect.center[1]), 5)
+            elif node.rect[0] < neighbour.rect[0]:
+                arrow(screen, colors.NODE, colors.NODE, node.rect.center, (neighbour.rect.center[0] - 15,
+                                                                           neighbour.rect.center[1]), 5)
+            elif node.rect[1] < neighbour.rect[1]:
+                arrow(screen, colors.NODE, colors.NODE, node.rect.center, (neighbour.rect.center[0],
+                                                                           neighbour.rect.center[1] - 15), 5)
+            elif node.rect[1] > neighbour.rect[1]:
+                arrow(screen, colors.NODE, colors.NODE, node.rect.center, (neighbour.rect.center[0],
+                                                                           neighbour.rect.center[1] + 15), 5)
+
+
+def strongly_connect(graph, rev_graph, start_pos):
+    global strong_connected
+
+    bfs(graph.positions[start_pos])
+    bfs(rev_graph.positions[start_pos])
+
+    update_strong_component(graph, rev_graph)
+
+    for node in graph.nodes:
+        if not node.strong:
+            strong_connected = False
+            break
+        strong_connected = True
+
+    if strong_connected:
+        return
+
+    fix_connectivity(graph, rev_graph)
+
+    for node in graph.nodes:
+        node.strong = False
+        rev_graph.positions[node.rect[0], node.rect[1]].strong = False
+
+    strongly_connect(graph, rev_graph, start_pos)
+
+
+def bfs(node):
+    node.strong = True
     queue = [node]
 
     while queue:
-        s = queue.pop()
+        s = queue.pop(0)
 
-        for neighbour in s:
-            if not neighbour.flooded:
-                neighbour.flooded = True
+        for neighbour in s.neighbours:
+            if not neighbour.strong:
+                neighbour.strong = True
                 queue.append(neighbour)
 
 
@@ -234,7 +309,7 @@ def flood_fill(node):
             break
         flooded = q.pop(0)
         flooded.flooded = True
-        time.sleep(0.2)
+        time.sleep(1)
         for neighbour in flooded.neighbours:
             if not neighbour.flooded:
                 q.append(neighbour)
@@ -244,7 +319,9 @@ def main():
     graph = create_graph()
     player = Player()
     out = Exit()
-    # strongly_connect(graph, player.position)
+    rev_graph = reverse_graph(graph)
+    strongly_connect(graph, rev_graph, player.position)
+    draw_edges(graph)
 
     flood_pos = random_pos()
     flood_node = graph.positions[flood_pos[0], flood_pos[1]]
