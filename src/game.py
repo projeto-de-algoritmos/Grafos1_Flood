@@ -127,7 +127,10 @@ def next_level():
     speed = speed - 0.1
     current_level += 1
     if current_level == 6:
+        speed = 0.05
+    elif current_level == 7:
         current_level = "Boa sorte"
+        speed = 0
     game_loop()
 
 
