@@ -18,15 +18,37 @@ inundação o alcance.
 Adicione 3 ou mais screenshots do projeto em funcionamento.
 
 ## Instalação 
-**Linguagem**: xxxxxx<br>
-**Framework**: (caso exista)<br>
-Descreva os pré-requisitos para rodar o seu projeto e os comandos necessários.
+**Linguagem**: Python<br>
+**Pré-requisitos**: [Python](https://www.python.org/downloads/), [pygame](https://www.pygame.org/wiki/GettingStarted) e [pip](https://packaging.python.org/tutorials/installing-packages/).<br>
+**Execução do projeto** <br>
+
+* Clone o repositório:
+```bash
+git clone https://github.com/projeto-de-algoritmos/Grafos1_Flood.git
+```
+* Acesse o repositório e instale as bibliotecas necessárias:
+```bash
+cd Grafos1_Flood/
+pip3 install -r requirements.txt
+```
+* Execute o Flood Rush e divirta-se:
+```bash
+python3 src/game.py
+```
 
 ## Uso 
-Explique como usar seu projeto caso haja algum passo a passo após o comando de execução.
+* Player - verde.
+* Saída - vermelho.
+* Enchente - azul.
+* Click com o botão esquerdo do mouse em *Start* 
+* Controle o player com ←, ↑, →,  ↓ do teclado.
+* Encontre a saída antes que enchente alcance o player ou a saída.
+* Click em *Restart* para jogar novamente.
+* Click em *Next* para o próximo nível
+* Click em *Quit* para encerrar o jogo.
 
 ## Outros 
-Quaisquer outras informações sobre seu projeto podem ser descritas abaixo.
+O jogo possui 7 níveis de dificuldade. 
 
 
 
